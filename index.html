@@ -3,8 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Security Alert (Just Kidding)</title>
-
+<title>Security Alert</title>
 <style>
   :root{
     --bg:#0b0b0b;
@@ -14,21 +13,25 @@
   }
   html,body{height:100%;margin:0;font-family:Inter, system-ui, Arial, sans-serif;background:var(--bg);color:var(--white);}
   .stage{display:flex;align-items:center;justify-content:center;height:100%;position:relative;overflow:hidden;}
-  .card{width:92%;max-width:900px;padding:36px;border-radius:14px;background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));box-shadow:0 10px 30px rgba(0,0,0,0.6);text-align:center;transition:transform .25s ease, filter .25s ease;}
+  .card{width:92%;max-width:900px;padding:36px;border-radius:14px;background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));box-shadow:0 10px 30px rgba(0,0,0,0.6);text-align:center;transition:transform .25s ease, filter .25s ease, opacity 1s ease;}
   .alert{color:var(--red);font-weight:800;font-size:40px;letter-spacing:1px;margin:8px 0;text-shadow:0 0 10px rgba(255,0,0,0.7);}
   .sub{font-size:18px;opacity:0.9;margin-bottom:20px;}
   .details{background:rgba(255,255,255,0.03);padding:18px;border-radius:10px;margin:18px 0;text-align:left;font-family:monospace;}
-  .btn{display:inline-block;margin-top:18px;padding:10px 18px;border-radius:999px;background:var(--accent);color:#002200;text-decoration:none;font-weight:700;}
-  /* fullscreen reveal */
-  .revealScreen{display:none;flex-direction:column;align-items:center;justify-content:center;height:100%;width:100%;position:absolute;left:0;top:0;background:linear-gradient(135deg,#fffaf0,#e8ffe8);color:#0b0b0b;padding:30px;box-sizing:border-box;z-index:2;}
-  .revealScreen h1{font-size:48px;margin:6px 0;}
-  .revealScreen p{font-size:18px;margin:6px 0 18px;}
-  .from{margin-top:10px;font-size:14px;opacity:0.8;}
-  .confetti-piece{position:absolute;width:10px;height:14px;opacity:0;transform-origin:center;will-change:transform,opacity;z-index:3}
+  .final-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:var(--bg);color:var(--red);gap:18px;}
+  .final-screen img{max-width:200px;width:40%;height:auto;filter:drop-shadow(0 6px 18px rgba(0,0,0,0.6));}
+  .locked{font-size:40px;font-weight:900;letter-spacing:1px;}
+  /* blinking animation */
+  @keyframes blink {
+    0% {opacity:1; filter: drop-shadow(0 0 10px rgba(255,0,0,0.9));}
+    50% {opacity:0.15; filter: none;}
+    100% {opacity:1; filter: drop-shadow(0 0 10px rgba(255,0,0,0.9));}
+  }
+  .blinking { animation: blink 1s infinite; }
+  .subtle{color:#ddd;opacity:0.9;font-size:14px}
   @media (max-width:420px){
     .alert{font-size:28px}
     .card{padding:22px}
-    .revealScreen h1{font-size:32px}
+    .locked{font-size:28px}
   }
 </style>
 </head>
@@ -43,108 +46,71 @@
     </div>
     <div style="opacity:0.85;font-size:13px">This message will refresh shortly while we gather system status...</div>
   </div>
-
-  <div class="revealScreen" id="reveal">
-    <h1>JUST KIDDING — PRANK!</h1>
-    <p>This was only a joke. Nothing on your phone has been accessed.</p>
-    <div class="from">— From: Your friendly prankster</div>
-    <a class="btn" id="closeBtn" href="#">LOL</a>
-  </div>
 </div>
 
 <script>
-  // Show initial scary state for 10 seconds
-  const revealDelay = 10000; // milliseconds (10 seconds)
+  // 10 second alert with flicker + dots; then show final image + blinking message
+  const revealDelay = 10000; // 10s
   const alertText = document.getElementById('alertText');
   const subText = document.getElementById('subText');
   const card = document.getElementById('card');
-  const reveal = document.getElementById('reveal');
-  const closeBtn = document.getElementById('closeBtn');
 
-  // Typing dots animation
+  // typing dots animation
   let dots = 0;
   const dotInterval = setInterval(()=>{
     dots = (dots+1)%4;
-    subText.textContent = 'Unusual activity detected. Device connection compromised' + '.'.repeat(dots);
+    if (subText) subText.textContent = 'Unusual activity detected. Device connection compromised' + '.'.repeat(dots);
   }, 500);
 
-  // Flicker effect (random flashes on alert text)
+  // flicker effect
   const flickerInterval = setInterval(()=>{
     const visible = Math.random() > 0.3;
-    alertText.style.opacity = visible ? '1' : Math.random().toFixed(2);
-    alertText.style.textShadow = visible ? '0 0 10px rgba(255,0,0,0.7)' : '0 0 2px rgba(255,0,0,0.3)';
+    if (alertText) {
+      alertText.style.opacity = visible ? '1' : (0.2 + Math.random()*0.6).toFixed(2);
+      alertText.style.textShadow = visible ? '0 0 10px rgba(255,0,0,0.8)' : '0 0 2px rgba(255,0,0,0.2)';
+    }
   }, 150);
 
-  // Reveal prank after delay
   setTimeout(()=>{
     clearInterval(dotInterval);
     clearInterval(flickerInterval);
-    card.style.filter = 'blur(2px)';
-    card.style.transform = 'scale(0.98)';
-    reveal.style.display = 'flex';
-    startConfetti();
+
+    // fade out card
+    card.style.opacity = '0';
+    // after fade, build final screen
+    setTimeout(showFinal, 1200);
   }, revealDelay);
 
-  closeBtn.addEventListener('click', (e)=>{
-    e.preventDefault();
-    stopConfetti();
-    reveal.innerHTML = `
-      <h1>All good! 🎉</h1>
-      <p>This was just a prank screen.</p>
-      <a class="btn" href="#" id="againBtn">Run again</a>
-    `;
-    const againBtn = document.getElementById('againBtn');
-    againBtn.addEventListener('click', (e2)=>{
-      e2.preventDefault();
-      location.reload();
-    });
-  });
+  function showFinal(){
+    // Attempt to use local file first (hacker-logo.png). If it doesn't exist, fallback to external URL.
+    const localPath = 'hacker-logo.png';
+    const fallbackUrl = 'https://upload.wikimedia.org/wikipedia/commons/6/6a/Anonymous-emblem.svg'; // placeholder - replace if you want
 
-  // Simple confetti animation
-  let confettiTimer = null;
-  function startConfetti(){
-    const colors = ['#ff3b30','#ff9500','#ffd60a','#32d74b','#5ac8fa','#5856d6'];
-    const count = 45;
-    const stage = document.body;
-    for(let i=0;i<count;i++){
-      const el = document.createElement('div');
-      el.className = 'confetti-piece';
-      el.style.left = Math.random()*100 + 'vw';
-      el.style.top = (Math.random()*20)+'vh';
-      el.style.background = colors[i % colors.length];
-      el.style.transform = 'rotate('+Math.random()*360+'deg)';
-      el.style.opacity = '1';
-      el.style.width = (6+Math.random()*12)+'px';
-      el.style.height = (8+Math.random()*18)+'px';
-      stage.appendChild(el);
-      el.animate([
-        {transform: `translateY(-10vh) rotate(${Math.random()*360}deg)`, opacity:1},
-        {transform: `translateY(${70+Math.random()*50}vh) rotate(${Math.random()*720}deg)`, opacity:0.8}
-      ], {duration: 2200 + Math.random()*1800, iterations:1, delay: Math.random()*600, easing:'cubic-bezier(.15,.9,.4,1)'});
-      setTimeout(()=>{ el.remove(); }, 5000 + Math.random()*2000);
-    }
-    confettiTimer = setInterval(()=>{
-      for(let i=0;i<8;i++){
-        const el = document.createElement('div');
-        el.className = 'confetti-piece';
-        el.style.left = Math.random()*100 + 'vw';
-        el.style.top = '-5vh';
-        el.style.background = colors[Math.floor(Math.random()*colors.length)];
-        el.style.width = (6+Math.random()*12)+'px';
-        el.style.height = (8+Math.random()*18)+'px';
-        document.body.appendChild(el);
-        el.animate([
-          {transform: 'translateY(0vh) rotate(0deg)', opacity:1},
-          {transform: `translateY(${80+Math.random()*40}vh) rotate(${Math.random()*720}deg)`, opacity:0}
-        ], {duration: 2000 + Math.random()*2000, iterations:1, easing:'cubic-bezier(.2,.8,.3,1)'});
-        setTimeout(()=>el.remove(), 5000);
-      }
-    }, 400);
-    setTimeout(stopConfetti, 6000);
-  }
-  function stopConfetti(){
-    if(confettiTimer){ clearInterval(confettiTimer); confettiTimer = null; }
-    document.querySelectorAll('.confetti-piece').forEach(n=>n.remove());
+    // create container
+    const finalDiv = document.createElement('div');
+    finalDiv.className = 'final-screen';
+
+    // create image element
+    const img = document.createElement('img');
+    // try loading local image; if it fails, use fallback
+    img.src = localPath;
+    img.onerror = function(){ img.onerror = null; img.src = fallbackUrl; };
+    img.alt = 'Hacker Logo';
+
+    const locked = document.createElement('div');
+    locked.className = 'locked blinking';
+    locked.textContent = 'SYSTEM LOCKED.';
+
+    const small = document.createElement('div');
+    small.className = 'subtle';
+    small.textContent = 'All network interfaces disabled. Contact administrator.';
+
+    finalDiv.appendChild(img);
+    finalDiv.appendChild(locked);
+    finalDiv.appendChild(small);
+
+    document.body.innerHTML = ''; // clear page
+    document.body.appendChild(finalDiv);
   }
 </script>
 </body>
